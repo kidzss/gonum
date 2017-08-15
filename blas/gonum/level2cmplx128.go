@@ -102,79 +102,72 @@ func (Implementation) Zher(uplo blas.Uplo, n int, alpha float64, x []complex128,
 	}
 	if uplo == blas.Upper {
 		if incX == 1 {
-			for i := 0; i < n; i++ {
-				if x[i] != 0 {
-					tmp := complex(alpha*real(x[i]), alpha*imag(x[i]))
-					for j := i + 1; j < n; j++ {
-						a[i*lda+j] += tmp * cmplx.Conj(x[j])
-					}
-					aii := real(a[i*lda+i])
-					xtmp := real(tmp * cmplx.Conj(x[i]))
-					a[i*lda+i] = complex(aii+xtmp, 0)
+			for j := 0; j < n; j++ {
+				if x[j] != 0 {
+					tmp := complex(alpha*real(x[j]), -alpha*imag(x[j]))
+					c128.AxpyInc(tmp, x[:j], a[j:], uintptr(j), 1, uintptr(lda), 0, 0)
+					ajj := real(a[j*lda+j])
+					xtmp := real(x[j] * tmp)
+					a[j*lda+j] = complex(ajj+xtmp, 0)
 				} else {
-					aii := real(a[i*lda+i])
-					a[i*lda+i] = complex(aii, 0)
+					ajj := real(a[j*lda+j])
+					a[j*lda+j] = complex(ajj, 0)
 				}
 			}
 			return
 		}
 
-		ix := kx
-		for i := 0; i < n; i++ {
-			if x[ix] != 0 {
-				tmp := complex(alpha*real(x[ix]), alpha*imag(x[ix]))
-				jx := ix + incX
-				for j := i + 1; j < n; j++ {
-					a[i*lda+j] += tmp * cmplx.Conj(x[jx])
-					jx += incX
-				}
-				aii := real(a[i*lda+i])
-				xtmp := real(tmp * cmplx.Conj(x[ix]))
-				a[i*lda+i] = complex(aii+xtmp, 0)
+		jx := kx
+		for j := 0; j < n; j++ {
+			if x[jx] != 0 {
+				tmp := complex(alpha*real(x[jx]), -alpha*imag(x[jx]))
+				c128.AxpyInc(tmp, x, a[j:], uintptr(j), uintptr(incX), uintptr(lda), uintptr(kx), 0)
+				ajj := real(a[j*lda+j])
+				xtmp := real(tmp * x[jx])
+				a[j*lda+j] = complex(ajj+xtmp, 0)
 			} else {
-				aii := real(a[i*lda+i])
-				a[i*lda+i] = complex(aii, 0)
+				ajj := real(a[j*lda+j])
+				a[j*lda+j] = complex(ajj, 0)
 			}
-			ix += incX
+			jx += incX
 		}
 		return
 	}
 
 	if incX == 1 {
-		for i := 0; i < n; i++ {
-			if x[i] != 0 {
-				tmp := complex(alpha*real(x[i]), alpha*imag(x[i]))
-				for j := 0; j < i; j++ {
-					a[i*lda+j] += tmp * cmplx.Conj(x[j])
+		for j := 0; j < n; j++ {
+			xj := x[j]
+			if xj != 0 {
+				tmp := complex(alpha*real(xj), -alpha*imag(xj))
+				ajj := real(a[j*lda+j])
+				xtmp := real(xj * tmp)
+				a[j*lda+j] = complex(ajj+xtmp, 0)
+				if n-j-1 > 0 {
+					c128.AxpyInc(tmp, x[j+1:n], a[(j+1)*lda+j:], uintptr(n-j-1), 1, uintptr(lda), 0, 0)
 				}
-				aii := real(a[i*lda+i])
-				xtmp := real(tmp * cmplx.Conj(x[i]))
-				a[i*lda+i] = complex(aii+xtmp, 0)
 			} else {
-				aii := real(a[i*lda+i])
-				a[i*lda+i] = complex(aii, 0)
+				ajj := real(a[j*lda+j])
+				a[j*lda+j] = complex(ajj, 0)
 			}
 		}
 		return
 	}
 
-	ix := kx
-	for i := 0; i < n; i++ {
-		if x[ix] != 0 {
-			tmp := complex(alpha*real(x[ix]), alpha*imag(x[ix]))
-			jx := kx
-			for j := 0; j < i; j++ {
-				a[i*lda+j] += tmp * cmplx.Conj(x[jx])
-				jx += incX
+	jx := kx
+	for j := 0; j < n; j++ {
+		xj := x[jx]
+		if xj != 0 {
+			tmp := complex(alpha*real(xj), -alpha*imag(xj))
+			ajj := real(a[j*lda+j])
+			xtmp := real(xj * tmp)
+			a[j*lda+j] = complex(ajj+xtmp, 0)
+			if n-j-1 > 0 {
+				c128.AxpyInc(tmp, x, a[(j+1)*lda+j:], uintptr(n-j-1), uintptr(incX), uintptr(lda), uintptr(jx+incX), 0)
 			}
-			aii := real(a[i*lda+i])
-			xtmp := real(tmp * cmplx.Conj(x[ix]))
-			a[i*lda+i] = complex(aii+xtmp, 0)
-
 		} else {
-			aii := real(a[i*lda+i])
-			a[i*lda+i] = complex(aii, 0)
+			ajj := real(a[j*lda+j])
+			a[j*lda+j] = complex(ajj, 0)
 		}
-		ix += incX
+		jx += incX
 	}
 }
