@@ -178,3 +178,34 @@ func (Implementation) Zher(uplo blas.Uplo, n int, alpha float64, x []complex128,
 		ix += incX
 	}
 }
+
+// Zher2 performs the Hermitian rank-two operation
+//  A += alpha*x*y^H + conj(alpha)*y*x^H
+// where alpha is a scalar, x and y are n element vectors and A is an n×n
+// Hermitian matrix. On entry, the imaginary parts of the diagonal elements are
+// ignored and assumed to be zero. On return they will be set to zero.
+func (Implementation) Zher2(ul blas.Uplo, n int, alpha complex128, x []complex128, incX int, y []complex128, incY int, a []complex128, lda int) {
+	if uplo != blas.Upper && uplo != blas.Lower {
+		panic(badUplo)
+	}
+	checkZMatrix('A', n, n, a, lda)
+	checkZVector('x', n, x, incX)
+	checkZVector('y', n, y, incY)
+
+	if n == 0 || alpha == 0 {
+		return
+	}
+
+	var kx, ky int
+	var jx, jy int
+	if incX != 1 || incY != 1 {
+		if incX < 0 {
+			kx = (1 - n) * incX
+		}
+		if incY < 0 {
+			ky = (1 - n) * incY
+		}
+		jx = kx
+		jy = ky
+	}
+}
